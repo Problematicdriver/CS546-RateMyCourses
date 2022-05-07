@@ -1,13 +1,18 @@
 const mongoCollections = require('../config/mongoCollections');
 const inputCheck = require('./inputCheck');
 const courseReview = mongoCollections.courseReview;
+const course = mongoCollections.courses
+const user = mongoCollections.users
 const { ObjectId } = require('mongodb');
 
 module.exports = {
     createCourseReview,
+    deleteCourseReview,
     countCourseReview,
-    getAllCourseReview
+    countCourseReviewByDepartment,
+    avgCourseReview,
 }
+
 
 async function createCourseReview(userId, courseId, courseOwner) {
 
@@ -42,7 +47,7 @@ async function countCourseReview() {
 }
 
 
-async function getAllCourseReview() {
+async function countCourseReviewByDepartment() {
     const courseReviewCollection = await courseReview();
     const courseReviewCursor = await courseReviewCollection.find()
     const allCourseReview =  await courseReviewCursor.toArray()
@@ -57,19 +62,38 @@ async function getAllCourseReview() {
     return departmentCourseReviewCount
 }
 
+async function deleteCourseReview(userId, courseId) {
+    const courseReviewCollection = await courseReview();
+
+    const deletionInfo = await courseReviewCollection.deleteOne({ userId: userId, courseId: courseId });
+    if (!deletionInfo.deletedCount === 0) {
+        throw 'fail to delete review in course review';
+    }
+    return { courseReviewDeleted: true }
+}
+
 function courseOwnerToDepartment(courseOwner) {
     // Computer Science Program ==> Computer Science 
     // Finance Program ==> Finance
-    const arr = courseOwner.split(" ");
+    // Finance ==> Finance
     let department = ""
-    for(let i = 0; i < arr.length - 1; i++) {
-        department += arr[i] + " ";
+    const arr = courseOwner.split(" ");
+    if(arr[arr.length-1] == "Program") {
+        for(let i = 0; i < arr.length - 1; i++) {
+            department += arr[i] + " ";
+        }
+        return department.trim();
     }
-    return department.trim();
+    return courseOwner
+}
+
+async function avgCourseReview() {
+    const courseCollection = await course()
+    const courseReveiwReviewCollection = await courseReview();
+    const numberOfCourse = await courseCollection.countDocuments()
+    const numberOfCourseReview = await courseReveiwReviewCollection.countDocuments() 
+    return (numberOfCourseReview/numberOfCourse).toFixed(2);
 }
 
 
-
-
- 
 

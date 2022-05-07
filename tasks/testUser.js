@@ -16,6 +16,9 @@ const main = async () => {
     try {
         let createUser = await user.createUser(
             "zihengZhu",
+            "aaa@gmail.com", 
+            "Computer Science", 
+            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2K9xcJVlIG31wI5COY_Qep5GahOMmCmLYEQ&usqp=CAU",
             "123456789"
         )
 
@@ -35,6 +38,9 @@ const main = async () => {
     try {
         let createUser = await user.createUser(
             "somebody",
+            "aaa@gmail.com", 
+            "Computer Science", 
+            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2K9xcJVlIG31wI5COY_Qep5GahOMmCmLYEQ&usqp=CAU",
             "123456789"
         )
         const insertStatus = createUser.userInserted
@@ -53,6 +59,9 @@ const main = async () => {
     try {
         let createUser = await user.createUser(
             "JiangJinFu",
+            "aaa@gmail.com", 
+            "Computer Science", 
+            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2K9xcJVlIG31wI5COY_Qep5GahOMmCmLYEQ&usqp=CAU",
             "123456789"
         )
         const insertStatus = createUser.userInserted
@@ -76,10 +85,10 @@ const main = async () => {
             'Graduate', // academicLevel
             'Computer Science Program', // courseOwner
             'Core', // type
-            ['Audit', 'Graded', 'Pass/Fail'], // gradingBasis
+          //  ['Audit', 'Graded', 'Pass/Fail'], // gradingBasis
             3, // units
             'This course will provide students with a first strong approach of internet programming', // description
-            ['Fall Semester', 'Spring Semester', 'Summer Session'], // typicalPeriodsOffered
+         //   ['Fall Semester', 'Spring Semester', 'Summer Session'], // typicalPeriodsOffered
             'Lecture', // instructionalFormats
             'https://web.stevens.edu/academic_files/courses/syllabus/CS546syl.pdf', // syllabus
             'https://github.com/graffixnyc/CS-546', // courseware
@@ -99,10 +108,10 @@ const main = async () => {
             'Graduate', // academicLevel
             'Computer Science Program', // courseOwner
             'Core', // type
-            ['Audit', 'Graded', 'Pass/Fail'], // gradingBasis
+           // ['Audit', 'Graded', 'Pass/Fail'], // gradingBasis
             3, // units
             'This course will provide students with a first strong approach of database system', // description
-            ['Fall Semester', 'Spring Semester', 'Summer Session'], // typicalPeriodsOffered
+           // ['Fall Semester', 'Spring Semester', 'Summer Session'], // typicalPeriodsOffered
             'Lecture', // instructionalFormats
             'https://web.stevens.edu/academic_files/courses/syllabus/CS546syl.pdf', // syllabus
             'https://github.com/graffixnyc/CS-546', // courseware

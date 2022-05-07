@@ -1,4 +1,4 @@
-// const { ConsoleLogger } = require('aws-amplify/node_modules/@aws-amplify/core');
+
 const express = require('express');
 const router = express.Router();
 const course = require('../data/course');
@@ -19,8 +19,15 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => { // show course
-    let courseDetail = await course.getCourse(req.params.id);
-    res.render('course', { title: courseDetail.courseName, courseDetail: courseDetail});
+    let courseDetail = undefined
+    try {
+        courseDetail = await course.getCourse(req.params.id);
+        res.render('course', { title: courseDetail.courseName, courseDetail: courseDetail});
+    } catch (e) {
+        res.render('404')
+        return
+    }
+    
 });
 
 router.post('/:id', async (req, res) => { // create course review
@@ -50,7 +57,7 @@ router.post('/:id', async (req, res) => { // create course review
     res.status(200).json({reviewCreateStatus });
 });
 
-router.delete('/:id', async (req, res) => {  //delete course review
+router.delete('/:id', async (req, res) => {  
     const courseId = req.params.id;
 
     try {
@@ -78,6 +85,41 @@ router.delete('/:id', async (req, res) => {  //delete course review
     */
 });
 
+
+
+router.put('/deleteCourseReview', async (req, res) => {  
+ 
+    let userId = req.body.userId;
+    let courseId = req.body.courseId;
+    let reviewDeleteStatus = undefined
+    try {
+        reviewDeleteStatus = await user.deleteCourseReview(userId, courseId);
+    } catch (e) {
+        res.status(500).json(e);
+        return
+    }
+    
+    res.status(200).json({reviewDeleteStatus: true});
+    
+});
+
+
+router.put('/editCourseReview/', async (req, res) => {  
+    let userId = req.body.userId;
+    let courseId = req.body.courseId;
+    let newComment = req.body.newComment;
+    let reviewEditStatus = undefined
+    try {
+        reviewEditStatus = await course.updateCourseReviewComment(userId, courseId, newComment)
+    } catch (e) {
+        res.status(500).json(e);
+        return
+    }
+    
+    res.status(200).json({reviewEditStatus: true});
+    
+});
+
 router.put('/edit/:id', async (req, res) => {  // edit course
     const courseId = req.params.id
     const courseBody = req.body
@@ -89,10 +131,10 @@ router.put('/edit/:id', async (req, res) => {  // edit course
     let academicLevel = undefined
     let courseOwner = undefined
     let type = undefined
-    let gradingBasis = undefined
+   // let gradingBasis = undefined
     let units = undefined
     let description = undefined
-    let typicalPeriodsOffered = undefined
+  //  let typicalPeriodsOffered = undefined
     let instructionalFormats = undefined
     let syllabus = undefined
     let courseware = undefined
@@ -127,7 +169,7 @@ router.put('/edit/:id', async (req, res) => {  // edit course
     }
 
     try {
-        gradingBasis = inputCheck.checkGradingBasis(courseBody.gradingBasis)
+      //  gradingBasis = inputCheck.checkGradingBasis(courseBody.gradingBasis)
     }catch(e) {
         res.status(400).json(e);
         return
@@ -148,7 +190,7 @@ router.put('/edit/:id', async (req, res) => {  // edit course
     }
 
     try {
-        typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(courseBody.typicalPeriodsOffered)
+     //   typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(courseBody.typicalPeriodsOffered)
     }catch(e) {
         res.status(400).json(e);
         return
@@ -189,10 +231,10 @@ router.put('/edit/:id', async (req, res) => {  // edit course
             academicLevel, 
             courseOwner, 
             type, 
-            gradingBasis,
+          //  gradingBasis,
             units,
             description,
-            typicalPeriodsOffered,
+          //  typicalPeriodsOffered,
             instructionalFormats,
             syllabus,
             courseware,
@@ -214,10 +256,10 @@ router.post('/', async (req, res) => { // create new course
     let academicLevel = undefined
     let courseOwner = undefined
     let type = undefined
-    let gradingBasis = undefined
+   // let gradingBasis = undefined
     let units = undefined
     let description = undefined
-    let typicalPeriodsOffered = undefined
+  //  let typicalPeriodsOffered = undefined
     let instructionalFormats = undefined
     let syllabus = undefined
     let courseware = undefined
@@ -252,7 +294,7 @@ router.post('/', async (req, res) => { // create new course
     }
 
     try {
-        gradingBasis = inputCheck.checkGradingBasis(courseBody.gradingBasis)
+       // gradingBasis = inputCheck.checkGradingBasis(courseBody.gradingBasis)
     }catch(e) {
         res.status(400).json(e);
         return
@@ -273,7 +315,7 @@ router.post('/', async (req, res) => { // create new course
     }
 
     try {
-        typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(courseBody.typicalPeriodsOffered)
+      //  typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(courseBody.typicalPeriodsOffered)
     }catch(e) {
         res.status(400).json(e);
         return
@@ -306,6 +348,7 @@ router.post('/', async (req, res) => { // create new course
         res.status(400).json(e);
         return
     }
+ 
 
     try {
         const newCourse = await course.createCourse(
@@ -313,10 +356,10 @@ router.post('/', async (req, res) => { // create new course
             academicLevel, 
             courseOwner, 
             type, 
-            gradingBasis,
+           // gradingBasis,
             units,
             description,
-            typicalPeriodsOffered,
+          //  typicalPeriodsOffered,
             instructionalFormats,
             syllabus,
             courseware,

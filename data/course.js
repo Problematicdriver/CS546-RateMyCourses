@@ -1,6 +1,8 @@
 const mongoCollections = require('../config/mongoCollections');
 const inputCheck = require('./inputCheck');
 const courses = mongoCollections.courses;
+const users = mongoCollections.users;
+const courseReviewDBfunction = require('../data/courseReview')
 const { ObjectId } = require('mongodb');
 
 
@@ -11,21 +13,27 @@ module.exports = {
     updateCourse,
     createCourseReview, // create course review function will call call back function update rating, count and metrics
     deleteCourseReview,
-    countCourses
+    countCourses,
+    getCoursesByKeywords,
+    getTop5CourseByMajor,
+    updateCourseCount,
+    updateCourseRating,
+    decreaseCourseCount,
+    updateCourseReviewComment
 }
 
 async function createCourse(courseName, academicLevel, courseOwner, type,
-    gradingBasis, units, description, typicalPeriodsOffered,
+    units, description,
     instructionalFormats, syllabus, courseware, picture) {
     try {
         courseName = inputCheck.checkCourseName(courseName);
         academicLevel = inputCheck.checkAcademicLevel(academicLevel);
         courseOwner = inputCheck.checkCourseOwner(courseOwner);
         type = inputCheck.checkType(type);
-        gradingBasis = inputCheck.checkGradingBasis(gradingBasis);
+        //  gradingBasis = inputCheck.checkGradingBasis(gradingBasis);
         units = inputCheck.checkUnits(units);
         description = inputCheck.checkDescription(description);
-        typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(typicalPeriodsOffered);
+        // typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(typicalPeriodsOffered);
         instructionalFormats = inputCheck.checkInstructionalFormats(instructionalFormats);
         syllabus = inputCheck.checkSyllabus(syllabus);
         courseware = inputCheck.checkCourseware(courseware);
@@ -44,10 +52,10 @@ async function createCourse(courseName, academicLevel, courseOwner, type,
         academicLevel: academicLevel,
         courseOwner: courseOwner,
         type: type,
-        gradingBasis: gradingBasis,
+        // gradingBasis: gradingBasis,
         units: units,
         description: description,
-        typicalPeriodsOffered: typicalPeriodsOffered,
+        //  typicalPeriodsOffered: typicalPeriodsOffered,
         instructionalFormats: instructionalFormats,
         syllabus: syllabus,
         courseware: courseware,
@@ -70,6 +78,14 @@ async function getCourse(courseId) {
     courseId = inputCheck.checkCourseId(courseId);
     const courseCollection = await courses();
     let course = await courseCollection.findOne({ _id: ObjectId(courseId) });
+    let reviews = course.courseReviews;
+    for (let i = 0; i < reviews.length; i++) {
+        let userId = reviews[i].userId
+        const userCollection = await users();
+        const user = await userCollection.findOne({ _id: ObjectId(userId) });
+        if (!user) throw 'User not found';
+        reviews[i].profilePicture = user.profilePicture;
+    }
     if (course === null) throw 'No course with that id';
     return course;
 }
@@ -82,6 +98,13 @@ async function removeCourse(courseId) {
     }
     const courseCollection = await courses();
     const course = await this.getCourse(courseId)
+    const courseReviews = course.courseReviews
+    for(let i = 0; i < courseReviews.length; i++) {
+        const uid = courseReviews[i].userId
+        const cid = courseReviews[i].courseId
+        await removeUserCourseReview(cid, uid)
+        await courseReviewDBfunction.deleteCourseReview(uid, cid)
+    }
     const courseName = course.courseName
     const deletionInfo = await courseCollection.deleteOne({ _id: ObjectId(courseId) });
     if (deletionInfo.deletedCount === 0) {
@@ -91,17 +114,17 @@ async function removeCourse(courseId) {
 }
 
 async function updateCourse(courseId, courseName, academicLevel, courseOwner, type,
-    gradingBasis, units, description, typicalPeriodsOffered,
+    units, description,
     instructionalFormats, syllabus, courseware, picture) {
     try {
         courseName = inputCheck.checkCourseName(courseName);
         academicLevel = inputCheck.checkAcademicLevel(academicLevel);
         courseOwner = inputCheck.checkCourseOwner(courseOwner);
         type = inputCheck.checkType(type);
-        gradingBasis = inputCheck.checkGradingBasis(gradingBasis);
+        //  gradingBasis = inputCheck.checkGradingBasis(gradingBasis);
         units = inputCheck.checkUnits(units);
         description = inputCheck.checkDescription(description);
-        typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(typicalPeriodsOffered);
+        //  typicalPeriodsOffered = inputCheck.checkTypicalPeriodsOffered(typicalPeriodsOffered);
         instructionalFormats = inputCheck.checkInstructionalFormats(instructionalFormats);
         syllabus = inputCheck.checkSyllabus(syllabus);
         courseware = inputCheck.checkCourseware(courseware);
@@ -115,16 +138,16 @@ async function updateCourse(courseId, courseName, academicLevel, courseOwner, ty
     let courseReviews = oldCourse.courseReviews
     let overallRating = oldCourse.overallRating
     const courseCollection = await courses();
-    
+
     let updatedCourse = {
         courseName: courseName,
         academicLevel: academicLevel,
         courseOwner: courseOwner,
         type: type,
-        gradingBasis: gradingBasis,
+        //   gradingBasis: gradingBasis,
         units: units,
         description: description,
-        typicalPeriodsOffered: typicalPeriodsOffered,
+        //   typicalPeriodsOffered: typicalPeriodsOffered,
         instructionalFormats: instructionalFormats,
         syllabus: syllabus,
         courseware: courseware,
@@ -134,7 +157,7 @@ async function updateCourse(courseId, courseName, academicLevel, courseOwner, ty
         courseReviews: courseReviews,
         overallRating: overallRating
     }
-    
+
     const updatedInfo = await courseCollection.replaceOne(
         { _id: ObjectId(courseId) },
         updatedCourse
@@ -346,11 +369,118 @@ async function updateCourseRating(courseId) {
     return { updateOverallRating: true }
 }
 
-//async function getCoursesByKeywords(department, courseName)
+
 async function countCourses() {
     const courseCollection = await courses();
     const count = await courseCollection.countDocuments()
     return count
+}
+
+
+async function getCoursesByDepartment(department) {
+    const courseCollection = await courses();
+    let courseList = await courseCollection.find({}).toArray();
+    let departmentCourses = []
+    courseList.forEach(course => {
+        if (courseOwnerToDepartment(course.courseOwner).toLowerCase() == department.toLowerCase()) {
+            departmentCourses.push(course);
+        }
+    })
+    return departmentCourses
+}
+
+function courseOwnerToDepartment(courseOwner) {
+    // Computer Science Program ==> Computer Science 
+    // Finance Program ==> Finance
+    // Finance ==> Finance
+    let department = ""
+    const arr = courseOwner.split(" ");
+    if (arr[arr.length - 1] == "Program") {
+        for (let i = 0; i < arr.length - 1; i++) {
+            department += arr[i] + " ";
+        }
+        return department.trim();
+    }
+    return courseOwner
+}
+
+async function getCoursesByKeywords(department, keyword) {
+    const departmentCourses = await getCoursesByDepartment(department)
+    if (keyword == undefined) return departmentCourses
+    let courseList = []
+    departmentCourses.forEach(course => {
+        const courseName = course.courseName
+        if (matchKeyword(courseName, keyword)) {
+            courseList.push(course)
+        }
+    })
+    return courseList
+}
+
+function matchKeyword(courseName, keyword) {
+    const words = courseName.split(" ");
+    for (let i = 0; i < words.length; i++) {
+        if (words[i].indexOf(keyword) != -1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+
+async function getTop5CourseByMajor(major) {
+    const departmentCourse = await getCoursesByDepartment(major)
+    let res = departmentCourse.sort((a, b) => b.overallRating - a.overallRating).slice(0, 5);
+    return res;
+}
+
+async function removeUserCourseReview(courseId, userId) {
+    const userCollection = await users()
+
+    await userCollection.updateOne(
+        { _id: ObjectId(userId) },
+        { $pull: { courseReviews: { courseId: courseId } } }
+    )
+}  
+
+async function updateCourseReviewComment(userId, courseId, newComment) {
+    try {
+        userId = inputCheck.checkUserId(userId);
+        courseId = inputCheck.checkCourseId(courseId);
+        newComment = inputCheck.checkComment(newComment);
+    } catch (e) {
+        throw e
+    }
+    const courseCollection = await courses();
+    const userCollection = await users();
+    const updateCourseReviewInCourse = await courseCollection.updateOne(
+        {_id: ObjectId(courseId),"courseReviews.userId"  : userId}, 
+        {
+            $set: {
+                "courseReviews.$.comment" : newComment
+            }
+        }
+    )
+
+    const updateCourseReviewInUser = await userCollection.updateOne(
+        {_id: ObjectId(userId),"courseReviews.courseId"  : courseId}, 
+        {
+            $set: {
+                "courseReviews.$.comment" : newComment
+            }
+        }
+    )
+    
+    if (updateCourseReviewInCourse.modifiedCount === 0) {
+        throw 'could not update course review in course';
+    }
+
+    if (updateCourseReviewInUser.modifiedCount === 0) {
+        throw 'could not update course review in user';
+    }
+    return {updateCourseReviewComment: true}
 }
 
 
